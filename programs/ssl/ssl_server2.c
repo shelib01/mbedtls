@@ -470,16 +470,45 @@ static void my_debug( void *ctx, int level,
                       const char *str )
 {
     const char *p, *basename;
-
+    ctx = ctx;
     /* Extract basename from file */
     for( p = basename = file; *p != '\0'; p++ )
         if( *p == '/' || *p == '\\' )
             basename = p + 1;
 
-    mbedtls_fprintf( (FILE *) ctx, "%s:%04d: |%d| %s", basename, line, level, str );
-    fflush(  (FILE *) ctx  );
+    printf("%s:%04d: |%d| %s\n", basename, line, level, str );
+    //fflush();
 }
 
+static int shelly_ctr_drbg_random(void *p_rng, unsigned char *output, size_t output_len)
+{
+    int ret = 0;
+    int i = 0;
+    mbedtls_ctr_drbg_context *ctx = (mbedtls_ctr_drbg_context *)p_rng;
+
+    ctx = ctx;
+
+#if defined(MBEDTLS_THREADING_C)
+    if ((ret = mbedtls_mutex_lock(&ctx->mutex)) != 0)
+        return(ret);
+#endif
+    for (i = 0; i < output_len; i++) {
+        int j = 2;
+        output[i] = j;
+        if (j > 200)
+            j = 2;
+        j++;
+    }
+   
+    //ret = mbedtls_ctr_drbg_random_with_add(ctx, output, output_len, NULL, 0);
+
+#if defined(MBEDTLS_THREADING_C)
+    if (mbedtls_mutex_unlock(&ctx->mutex) != 0)
+        return(MBEDTLS_ERR_THREADING_MUTEX_ERROR);
+#endif
+
+    return(ret);
+}
 /*
  * Test recv/send functions that make sure each try returns
  * WANT_READ/WANT_WRITE at least once before sucesseding
@@ -614,14 +643,14 @@ sni_entry *sni_parse( char *sni_string )
         GET_ITEM( auth_str );
 
         if( ( new->cert = mbedtls_calloc( 1, sizeof( mbedtls_x509_crt ) ) ) == NULL ||
-            ( new->key = mbedtls_calloc( 1, sizeof( mbedtls_pk_context ) ) ) == NULL )
+                ( new->key = mbedtls_calloc( 1, sizeof( mbedtls_pk_context ) ) ) == NULL )
             goto error;
 
         mbedtls_x509_crt_init( new->cert );
         mbedtls_pk_init( new->key );
 
         if( mbedtls_x509_crt_parse_file( new->cert, crt_file ) != 0 ||
-            mbedtls_pk_parse_keyfile( new->key, key_file, "" ) != 0 )
+                mbedtls_pk_parse_keyfile( new->key, key_file, "" ) != 0 )
             goto error;
 
         if( strcmp( ca_file, "-" ) != 0 )
@@ -843,12 +872,12 @@ void term_handler( int sig )
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
 static int ssl_sig_hashes_for_test[] = {
 #if defined(MBEDTLS_SHA512_C)
-    MBEDTLS_MD_SHA512,
-    MBEDTLS_MD_SHA384,
+//   MBEDTLS_MD_SHA512,
+//   MBEDTLS_MD_SHA384,
 #endif
 #if defined(MBEDTLS_SHA256_C)
     MBEDTLS_MD_SHA256,
-    MBEDTLS_MD_SHA224,
+//   MBEDTLS_MD_SHA224,
 #endif
 #if defined(MBEDTLS_SHA1_C)
     /* Allow SHA-1 as we use it extensively in tests. */
@@ -905,21 +934,28 @@ typedef struct
     unsigned delay;
 } ssl_async_operation_context_t;
 
-static int ssl_async_start( void *connection_ctx_arg,
-                            void **p_operation_ctx,
-                            mbedtls_x509_crt *cert,
-                            const char *op_name,
-                            mbedtls_md_type_t md_alg,
-                            const unsigned char *input,
-                            size_t input_len )
+static int ssl_async_start(void *connection_ctx_arg,
+                           void **p_operation_ctx,
+                           mbedtls_x509_crt *cert,
+                           const char *op_name,
+                           mbedtls_md_type_t md_alg,
+                           const unsigned char *input,
+                           size_t input_len)
 {
+#if 0
     ssl_async_key_context_t *key_ctx = connection_ctx_arg;
     size_t slot;
+
+#endif
     ssl_async_operation_context_t *ctx = NULL;
+    static int start_count = 0;
+    start_count++;
+    printf("\nssl_async_start counter %d\n", start_count);
+#if 0
     {
         char dn[100];
-        mbedtls_x509_dn_gets( dn, sizeof( dn ), &cert->subject );
-        mbedtls_printf( "Async %s callback: looking for DN=%s\n", op_name, dn );
+        mbedtls_x509_dn_gets(dn, sizeof(dn), &cert->subject);
+        mbedtls_printf("Async %s callback: looking for DN=%s\n", op_name, dn);
     }
     for( slot = 0; slot < key_ctx->slots_used; slot++ )
     {
@@ -953,6 +989,9 @@ static int ssl_async_start( void *connection_ctx_arg,
     if( ctx->delay == 0 )
         return( 0 );
     else
+#endif
+    ctx = mbedtls_calloc(1, sizeof(*ctx));
+    *p_operation_ctx = ctx;
         return( MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS );
 }
 
@@ -985,33 +1024,35 @@ static int ssl_async_resume( void *connection_ctx_arg,
                              size_t *output_len,
                              size_t output_size )
 {
+#if 0
     ssl_async_operation_context_t *ctx = operation_ctx_arg;
     ssl_async_key_context_t *connection_ctx = connection_ctx_arg;
     ssl_async_key_slot_t *key_slot = &connection_ctx->slots[ctx->slot];
     int ret;
     const char *op_name;
-    if( connection_ctx->inject_error == SSL_ASYNC_INJECT_ERROR_RESUME )
-    {
+#endif
+    static int resume_count = 0;
+    resume_count++;
+    printf("\nresume_count %d\n", resume_count);
+    uint8_t my_sign[] = { 0x30, 0x46, 0x02, 0x21, 0x00, 0x8d, 0x68, 0x43, 0x13, 0x42, 0xa2, 0xa0, 0x42, 0x6a, 0x68, 0xdd, 0x81, 0x4c, 0xac, 0xf6, 0x7f, 0xd4, 0xe2, 0x55, 0x85, 0x20, 0x0c, 0x5c, 0xde, 0x1a, 0x43, 0xf3, 0x01, 0xb1, 0xb3, 0xae, 0x57, 0x02, 0x21, 0x00, 0xec, 0x59, 0x45, 0x86, 0x43, 0x0d, 0x0d, 0xfe, 0xfd, 0x78, 0xf7, 0xdd, 0x4e, 0x89, 0x4e, 0xad, 0x9b, 0x75, 0x39, 0x6a, 0xd7, 0x06, 0x6d, 0x69, 0x82, 0xd8, 0x66, 0x9c, 0x5d, 0x35, 0xb8, 0xff };
+#if 0
+    if( connection_ctx->inject_error == SSL_ASYNC_INJECT_ERROR_RESUME ) {
         mbedtls_printf( "Async resume callback: injected error\n" );
         return( MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE );
     }
-    if( ctx->delay > 0 )
-    {
+    if( ctx->delay > 0 ) {
         --ctx->delay;
         mbedtls_printf( "Async resume (slot %zd): call %u more times.\n",
                         ctx->slot, ctx->delay );
         return( MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS );
     }
-    if( ctx->md_alg == MBEDTLS_MD_NONE )
-    {
+    if( ctx->md_alg == MBEDTLS_MD_NONE ) {
         op_name = "decrypt";
         ret = mbedtls_pk_decrypt( key_slot->pk,
                                   ctx->input, ctx->input_len,
                                   output, output_len, output_size,
                                   connection_ctx->f_rng, connection_ctx->p_rng );
-    }
-    else
-    {
+    } else {
         op_name = "sign";
         ret = mbedtls_pk_sign( key_slot->pk,
                                ctx->md_alg,
@@ -1019,16 +1060,23 @@ static int ssl_async_resume( void *connection_ctx_arg,
                                output, output_len,
                                connection_ctx->f_rng, connection_ctx->p_rng );
     }
-    if( connection_ctx->inject_error == SSL_ASYNC_INJECT_ERROR_PK )
-    {
+    if( connection_ctx->inject_error == SSL_ASYNC_INJECT_ERROR_PK ) {
         mbedtls_printf( "Async resume callback: %s done but injected error\n",
                         op_name );
         return( MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE );
     }
     mbedtls_printf( "Async resume (slot %zd): %s done, status=%d.\n",
                     ctx->slot, op_name, ret );
-    mbedtls_free( ctx );
-    return( ret );
+#endif
+
+    if (output_size < sizeof(my_sign)) {
+        printf("\nOutput size buffer error  output_size %d < sizeof(my_sign) %d\n", (int)output_size, (int)sizeof(my_sign));
+        return -1;
+    }
+    memcpy(output, my_sign, sizeof(my_sign));
+    *output_len = sizeof(my_sign);
+    mbedtls_free(operation_ctx_arg);
+    return 0;
 }
 
 static void ssl_async_cancel( void *connection_ctx_arg,
@@ -1559,7 +1607,7 @@ int main( int argc, char *argv[] )
     }
 
 #if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( opt.debug_level );
+    mbedtls_debug_set_threshold( 4 );
 #endif
 
     if( opt.force_ciphersuite[0] > 0 )
@@ -1835,11 +1883,11 @@ int main( int argc, char *argv[] )
             goto exit;
         }
     }
-    if( key_cert_init == 1 )
-    {
-        mbedtls_printf( " failed\n  !  crt_file without key_file or vice-versa\n\n" );
-        goto exit;
-    }
+	//we don't have private key in our test, but we have to upload sever certificate without private key 
+    /* if( key_cert_init == 1 ) {
+         mbedtls_printf( " failed\n  !  crt_file without key_file or vice-versa\n\n" );
+         goto exit;
+     } */
 
     if( strlen( opt.crt_file2 ) && strcmp( opt.crt_file2, "none" ) != 0 )
     {
@@ -2041,7 +2089,7 @@ int main( int argc, char *argv[] )
         }
 #endif
 
-    mbedtls_ssl_conf_rng( &conf, mbedtls_ctr_drbg_random, &ctr_drbg );
+    mbedtls_ssl_conf_rng( &conf, shelly_ctr_drbg_random, &ctr_drbg );
     mbedtls_ssl_conf_dbg( &conf, my_debug, stdout );
 
 #if defined(MBEDTLS_SSL_CACHE_C)

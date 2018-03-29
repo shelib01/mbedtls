@@ -2331,7 +2331,7 @@
  *
  * This module adds support for SHA-384 and SHA-512.
  */
-#define MBEDTLS_SHA512_C
+//#define MBEDTLS_SHA512_C
 
 /**
  * \def MBEDTLS_SSL_ASYNC_PRIVATE_C
@@ -2342,7 +2342,7 @@
  * operation inside the library.
  *
  */
-//#define MBEDTLS_SSL_ASYNC_PRIVATE_C
+#define MBEDTLS_SSL_ASYNC_PRIVATE_C
 
 /**
  * \def MBEDTLS_SSL_CACHE_C

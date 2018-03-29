@@ -421,12 +421,12 @@ static int my_verify( void *data, mbedtls_x509_crt *crt, int depth, uint32_t *fl
 
 static int ssl_sig_hashes_for_test[] = {
 #if defined(MBEDTLS_SHA512_C)
-    MBEDTLS_MD_SHA512,
-    MBEDTLS_MD_SHA384,
+    // MBEDTLS_MD_SHA512,
+    //  MBEDTLS_MD_SHA384,
 #endif
 #if defined(MBEDTLS_SHA256_C)
     MBEDTLS_MD_SHA256,
-    MBEDTLS_MD_SHA224,
+//   MBEDTLS_MD_SHA224,
 #endif
 #if defined(MBEDTLS_SHA1_C)
     /* Allow SHA-1 as we use it extensively in tests. */

@@ -126,7 +126,7 @@ static int ssl_parse_servername_ext( mbedtls_ssl_context *ssl,
             {
                 MBEDTLS_SSL_DEBUG_RET( 1, "ssl_sni_wrapper", ret );
                 mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                        MBEDTLS_SSL_ALERT_MSG_UNRECOGNIZED_NAME );
+                                                MBEDTLS_SSL_ALERT_MSG_UNRECOGNIZED_NAME );
                 return( MBEDTLS_ERR_SSL_BAD_HS_CLIENT_HELLO );
             }
             return( 0 );
@@ -1104,8 +1104,8 @@ static int ssl_parse_client_hello_v2( mbedtls_ssl_context *ssl )
 #endif
         {
             if( p[0] != 0 ||
-                p[1] != ( ( ciphersuites[i] >> 8 ) & 0xFF ) ||
-                p[2] != ( ( ciphersuites[i]      ) & 0xFF ) )
+                    p[1] != ( ( ciphersuites[i] >> 8 ) & 0xFF ) ||
+                    p[2] != ( ( ciphersuites[i]      ) & 0xFF ) )
                 continue;
 
             got_common_suite = 1;
@@ -2416,11 +2416,18 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
 
 #if defined(MBEDTLS_HAVE_TIME)
     t = mbedtls_time( NULL );
-    *p++ = (unsigned char)( t >> 24 );
-    *p++ = (unsigned char)( t >> 16 );
-    *p++ = (unsigned char)( t >>  8 );
-    *p++ = (unsigned char)( t       );
 
+#if 0
+    * p++ = (unsigned char)(t >> 24);
+    *p++ = (unsigned char)(t >> 16);
+    *p++ = (unsigned char)(t >> 8);
+    *p++ = (unsigned char)(t);
+#else
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+#endif
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, current time: %lu", t ) );
 #else
     if( ( ret = ssl->conf->f_rng( ssl->conf->p_rng, p, 4 ) ) != 0 )

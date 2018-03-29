@@ -201,15 +201,30 @@ cleanup:
  * Obviously, compared to SEC1 4.1.3, we skip step 2 (hash message)
  */
 int mbedtls_ecdsa_verify( mbedtls_ecp_group *grp,
-                  const unsigned char *buf, size_t blen,
-                  const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s)
+                          const unsigned char *buf, size_t blen,
+                          const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s)
 {
     int ret;
     mbedtls_mpi e, s_inv, u1, u2;
     mbedtls_ecp_point R;
+    int i;
 
     mbedtls_ecp_point_init( &R );
-    mbedtls_mpi_init( &e ); mbedtls_mpi_init( &s_inv ); mbedtls_mpi_init( &u1 ); mbedtls_mpi_init( &u2 );
+    mbedtls_mpi_init( &e );
+    mbedtls_mpi_init( &s_inv );
+    mbedtls_mpi_init( &u1 );
+    mbedtls_mpi_init( &u2 );
+
+    printf("\nQ->x coordinate ");
+    for (i = 0; i < 32; i++) {
+        printf(" %x", ((uint8_t *)Q->X.p)[i]);
+    }
+   
+    printf("\nQ->y coordinate ");
+
+    for (i = 0; i < 32; i++) {
+        printf(" %x", ((uint8_t *)Q->Y.p)[i]);
+    }
 
     /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
     if( grp->N.p == NULL )

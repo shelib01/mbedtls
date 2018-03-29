@@ -698,10 +698,18 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
 
 #if defined(MBEDTLS_HAVE_TIME)
     t = mbedtls_time( NULL );
+
+#if 0
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
     *p++ = (unsigned char)( t       );
+#else
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+    *p++ = (unsigned char)(1);
+#endif
 
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, current time: %lu", t ) );
 #else
